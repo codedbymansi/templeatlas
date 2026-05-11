@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | TempleAtlas Heritage Project</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Specific Styles for About Page Components */
+        .rationale-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 25px 0;
+        }
+
+        .problem-card { background: #FFF5F5; border: 1px solid #FFE3E3; padding: 25px; border-radius: 20px; }
+        .solution-card { background: #F5FFF9; border: 1px solid #E3FFE9; padding: 25px; border-radius: 20px; }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: 0.3s;
+        }
+
+        .goal-item:hover { transform: translateX(10px); border-color: var(--gold); }
+
+        .check-icon {
+            color: #16A34A;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .rationale-grid, .pillars-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .dev-flex {
+                flex-direction: column;
+                gap: 30px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-logo">TempleAtlas</div>
+        <nav>
+            <a href="dashboard.html" class="nav-link"><span>📊</span> Dashboard</a>
+            <a href="map.html" class="nav-link"><span>🗺️</span> Map</a>
+            <a href="timeline.html" class="nav-link"><span>⏳</span> Timeline</a>
+            <a href="favs.html" class="nav-link"><span>⭐</span> Favorites</a>
+            <a href="about.html" class="nav-link active"><span>ℹ️</span> About</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="dash-header">
+            <div>
+                <h1>About the Project</h1>
+                <p style="color: #888;">BCA Project | Digital Heritage Analytics</p>
+            </div>
+            <div class="header-actions">
+                <button class="action-card" onclick="window.print()" style="padding: 10px 20px; font-weight: bold;">📥 Export Report</button>
+            </div>
+        </header>
+
+        <div class="section-wrapper" style="border-left: 6px solid var(--gold); background: white;">
+            <h2 style="color: var(--purple); margin-top: 0;">Our Mission & Vision</h2>
+            <p style="line-height: 1.8; color: #444; font-size: 1.05rem; margin-bottom: 25px;">
+                TempleAtlas is a digital initiative to preserve India’s architectural legacy. We aim to bridge the gap 
+                between traditional history and modern data science by creating a navigable, interactive heritage ecosystem.
+            </p>
+
+            <div class="pillars-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🏛️</div>
+                    <h4 style="color: var(--purple); margin: 0;">Preserve</h4>
+                </div>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🗺️</div>
+                    <h4 style="color: var(--purple); margin: 0;">Visualize</h4>
+                </div>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🎓</div>
+                    <h4 style="color: var(--purple); margin: 0;">Educate</h4>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="color: var(--purple); margin: 40px 0 20px 0;">Key Project Objectives</h2>
+        <div class="goals-container">
+            <div class="goal-item">
+                <span class="check-icon">✓</span>
+                <div><strong>Geospatial Mapping:</strong> Successfully plot 50+ heritage sites with precise coordinates using Leaflet.js.</div>
+            </div>
+            <div class="goal-item">
+                <span class="check-icon">✓</span>
+                <div><strong>Data Analytics:</strong> Implement real-time calculation of dynasty and state-wise temple distributions.</div>
+            </div>
+            <div class="goal-item">
+                <span class="check-icon">✓</span>
+                <div><strong>User Personalization:</strong> Develop a LocalStorage-based CRUD system for "Favorite" collections.</div>
+            </div>
+            <div class="goal-item">
+                <span class="check-icon">✓</span>
+                <div><strong>Responsive UI:</strong> Ensure 100% compatibility across mobile, tablet, and desktop viewports.</div>
+            </div>
+        </div>
+
+        <h2 style="color: var(--purple); margin: 40px 0 20px 0; text-align: center;">Strategic Rationale</h2>
+        <div class="rationale-grid">
+            <div class="problem-card">
+                <span class="tag" style="background: #FEE2E2; color: #DC2626;">The Problem</span>
+                <h3 style="color: #991B1B; margin: 0 0 15px 0;">Current Limitations</h3>
+                <ul style="list-style: none; padding: 0; color: #7F1D1D; font-size: 0.9rem; line-height: 1.6;">
+                    <li>• Scattered and unorganized cultural data.</li>
+                    <li>• Lack of visual-spatial context for monuments.</li>
+                    <li>• Static information without user interactivity.</li>
+                </ul>
+            </div>
+            <div class="solution-card">
+                <span class="tag" style="background: #DCFCE7; color: #16A34A;">The Solution</span>
+                <h3 style="color: #064E3B; margin: 0 0 15px 0;">The TempleAtlas Edge</h3>
+                <ul style="list-style: none; padding: 0; color: #064E3B; font-size: 0.9rem; line-height: 1.6;">
+                    <li>• Unified, structured JSON database repository.</li>
+                    <li>• Dynamic Mapping and Timeline visualization.</li>
+                    <li>• Exportable datasets and personalized lists.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 style="color: var(--purple); margin: 40px 0 20px 0;">Technological Stack</h2>
+        <div class="action-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+            <div class="action-card"><strong>Frontend</strong><br><small>HTML5, CSS3</small></div>
+            <div class="action-card"><strong>Intelligence</strong><br><small>JavaScript ES6</small></div>
+            <div class="action-card"><strong>Mapping</strong><br><small>Leaflet API</small></div>
+            <div class="action-card"><strong>Database</strong><br><small>JSON Objects</small></div>
+            <div class="action-card"><strong>Charts</strong><br><small>Chart.js</small></div>
+        </div>
+
+        <div class="section-wrapper" style="margin-top: 40px; background: white;">
+            <h3 style="color: var(--purple); margin: 0 0 20px 0; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px;">Development Team</h3>
+            <div class="dev-flex" style="display: flex; justify-content: space-around;">
+                <div class="dev-card" style="text-align: center;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">👩‍💻</div>
+                    <h4 style="margin: 0; color: var(--purple);">MANSI KHOSLA</h4>
+                    <p style="margin: 5px 0; color: var(--gold); font-size: 0.8rem; font-weight: bold;">Lead Developer</p>
+                    <small style="color: #888;">BCA 3rd Year | BUCC</small>
+                </div>
+                <div class="dev-card" style="text-align: center;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎨</div>
+                    <h4 style="margin: 0; color: var(--purple);">MUSKAN</h4>
+                    <p style="margin: 5px 0; color: var(--gold); font-size: 0.8rem; font-weight: bold;">UI/UX Designer</p>
+                    <small style="color: #888;">BCA 3rd Year | BUCC</small>
+                </div>
+            </div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 60px; padding-bottom: 30px; color: #bbb; font-size: 0.75rem;">
+            TempleAtlas Project Submission 2026 | Built for academic excellence.
+        </footer>
+    </main>
+</div>
+
+</body>
+</html>

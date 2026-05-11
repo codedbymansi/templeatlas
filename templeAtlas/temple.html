@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8">
+<title>Temple Details</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+<header class="main-header">
+<h1>TempleAtlas</h1>
+
+<button onclick="toggleDarkMode()" class="dark-btn">
+🌙 Dark Mode
+</button>
+
+</header>
+
+<div id="templeDetails"></div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const templeId = params.get("id");
+let currentTemple = null; 
+
+fetch('data/temples.json')
+.then(res => res.json())
+.then(temples => {
+    currentTemple = temples.find(t => t.id === templeId);
+
+    if(!currentTemple){
+        document.getElementById("templeDetails").innerHTML = "<p style='text-align:center;'>Temple not found</p>";
+        return;
+    }
+
+    // COMPLETE RENDER: This includes Name, Image, Stats, and Descriptions
+    document.getElementById("templeDetails").innerHTML = `
+    <div class="temple-container">
+        <h2 class="temple-title">${currentTemple.name}</h2>
+        
+        <div class="main-image-wrapper">
+            <img src="${currentTemple.image}" alt="${currentTemple.name}" onerror="this.src='images/fallback.jpg'">
+        </div>
+        
+        <div class="quick-stats">
+            <div class="stat"><strong>Location:</strong> ${currentTemple.city}, ${currentTemple.state}</div>
+            <div class="stat"><strong>Deity:</strong> ${currentTemple.deity}</div>
+            <div class="stat"><strong>Era:</strong> ${currentTemple.year || "Ancient"}</div>
+        </div>
+
+        <div class="info-card">
+            <h3>📜 Historical Significance</h3>
+            <p>${currentTemple.history || "Historical details coming soon."}</p>
+        </div>
+
+        <div class="info-card">
+            <h3>🔱 Sacred Mythology</h3>
+            <p>${currentTemple.mythology || "Mythological legends coming soon."}</p>
+        </div>
+
+        <div class="action-buttons">
+            <button class="fav-btn" onclick="saveToFavorites()">❤️ Add to Favorites</button>
+            <a href="map.html?temple=${currentTemple.id}" class="map-btn">📍 View on Map</a>
+        </div>
+    </div>`;
+});
+
+function saveToFavorites() {
+    if (!currentTemple || !currentTemple.id) return;
+
+    // Use key "favorites" to match favorites.html
+    let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+
+    if (favorites.includes(currentTemple.id)) {
+        alert("This temple is already in your favorites!");
+        return;
+    }
+
+    favorites.push(currentTemple.id);
+    localStorage.setItem("favorites", JSON.stringify(favorites));
+    alert(currentTemple.name + " added to favorites!");
+}
+
+function toggleDarkMode(){
+  document.body.classList.toggle("dark-mode");
+}
+</script>
+
+<footer class="footer">
+<p>TempleAtlas | Final Year BCA Project</p>
+</footer>
+
+</body>
+</html>
