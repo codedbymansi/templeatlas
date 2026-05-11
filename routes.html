@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempleAtlas | Final Pilgrimage Planner</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+   <style>
+    :root { --gold: #D4AF37; --purple: #3a2e5a; --bg: #f4f4f9; }
+    
+    /* 1. Body: REMOVED overflow: hidden to allow scrolling on mobile */
+    body { 
+        font-family: 'Segoe UI', sans-serif; 
+        background: var(--bg); 
+        margin: 0; 
+    }
+
+    /* 2. Desktop Layout: Side-by-side */
+    .planner-container { 
+        display: grid; 
+        grid-template-columns: 380px 1fr 320px; 
+        height: calc(100vh - 60px); 
+        gap: 10px; 
+        padding: 10px;
+        box-sizing: border-box; /* Ensures padding doesn't push the width out */
+    }
+
+    /* Sidebar Panels */
+    .panel { 
+        background: white; 
+        border-radius: 12px; 
+        overflow-y: auto; 
+        display: flex; 
+        flex-direction: column; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+    }
+    
+    .panel-header { padding: 15px; background: var(--purple); color: white; position: sticky; top: 0; z-index: 10; }
+    
+    .timeline-item {
+        padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;
+        display: flex; align-items: center; gap: 12px;
+    }
+    .timeline-item:hover { background: #fff9e6; border-left: 5px solid var(--gold); }
+    .timeline-item img { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #ddd; }
+
+    /* Map Section */
+    #map { height: 100%; width: 100%; border-radius: 12px; border: 2px solid var(--gold); }
+
+    /* Prep Panel */
+    .prep-panel { padding: 20px; }
+    .status-badge { padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; display: inline-block; margin-top: 5px; }
+    .open { background: #e6fffa; color: #234e52; }
+    .closed { background: #fff5f5; color: #c53030; }
+
+    .checklist { list-style: none; padding: 0; margin: 15px 0; }
+    .checklist li { margin-bottom: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+
+    .budget-box { background: var(--purple); color: var(--gold); padding: 15px; border-radius: 8px; text-align: center; margin-top: auto; }
+
+    /* 3. MOBILE FIX: Screens smaller than 1100px */
+    @media (max-width: 1100px) { 
+        .planner-container { 
+            display: flex; 
+            flex-direction: column; /* Stack panels one after another */
+            height: auto;           /* Let page grow as long as it needs */
+            padding: 10px;
+        }
+
+        #map { 
+            height: 400px;          /* Map MUST have a set height on mobile or it disappears */
+            order: -1;              /* Move map to the very top on mobile */
+            margin-bottom: 10px;
+        }
+
+        .panel { 
+            height: auto;           /* Let panels take up natural space */
+            max-height: 500px;      /* Prevent the itinerary from being miles long */
+            margin-bottom: 15px;
+        }
+        
+        .budget-box { margin-top: 20px; }
+    }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="index.html">Home</a>
+    <a href="map.html">Explore Map</a>
+    <a href="routes.html" style="border-bottom: 2px solid var(--gold);">Pilgrimage Routes</a>
+</nav>
+
+<div class="planner-container">
+    <!-- Panel 1: Selection & Itinerary -->
+    <aside class="panel">
+        <div class="panel-header">
+            <h3 style="margin:0 0 10px 0;">Select Sacred Route</h3>
+            <select id="routePicker" onchange="loadJourney(this.value)" style="width:100%; padding:10px; border-radius:5px; border:none;">
+                <option value="">-- Click to Choose --</option>
+                <option value="chardham">Char Dham Yatra</option>
+                <option value="jyotirlinga">12 Jyotirlinga (Full Path)</option>
+                <option value="krishna">Krishna Circuit</option>
+            </select>
+        </div>
+        <div id="itinerary-list">
+            <p style="padding:20px; color:#666; text-align:center;">Select a route to view the divine journey steps.</p>
+        </div>
+    </aside>
+
+    <!-- Center: Map -->
+    <main><div id="map"></div></main>
+
+    <!-- Panel 2: Logistics -->
+    <aside class="panel prep-panel">
+        <h3 style="margin-top:0; color:var(--purple);">Travel Plan</h3>
+        <div id="season-info">Waiting for selection...</div>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        
+        <h4 style="margin:0;">🧳 Packing Checklist</h4>
+        <ul class="checklist" id="checklist-items"><li>N/A</li></ul>
+
+        <div class="budget-box">
+            <small>ESTIMATED BUDGET</small>
+            <h2 id="budget-amount" style="margin:5px 0;">₹ 0</h2>
+        </div>
+    </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.min.js"></script>
+
+<script>
+    var map = L.map('map').setView([20.5937, 78.9629], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+   const routes = {
+    chardham: {
+        color: "#D4AF37",
+        budget: "₹35,000 - ₹50,000",
+        openMonths: [5, 6, 7, 8, 9, 10],
+        checklist: ["Heavy Woolens", "Walking Stick", "Raincoat", "Medical Certificate"],
+        stops: [
+            { name: "Yamunotri", coor: [31.0140, 78.4600], desc: "Source of Yamuna", img: "images/char_dham/yamunotri.jpg" },
+            { name: "Gangotri", coor: [30.9947, 78.9398], desc: "Source of Ganga", img: "images/char_dham/gangotri.jpg" },
+            { name: "Kedarnath", coor: [30.7352, 79.0669], desc: "Lord Shiva's Abode", img: "images/char_dham/kedarnath.jpg" },
+            { name: "Badrinath", coor: [30.7433, 79.4938], desc: "Lord Vishnu's Abode", img: "images/char_dham/badrinath.jpg" }
+        ]
+    },
+    jyotirlinga: {
+        color: "#FF4500",
+        budget: "₹60,000 - ₹80,000",
+        openMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        checklist: ["Cotton Wear", "ID Proof", "Small Pooja Kit"],
+        stops: [
+            { name: "Somnath", coor: [20.8880, 70.4012], desc: "Gujarat", img: "images/jyotirlinga/somnath.jpg" },
+            { name: "Nageshwar", coor: [22.3333, 68.9667], desc: "Gujarat", img: "images/jyotirlinga/nageshwar.jpg" },
+            { name: "Mallikarjuna", coor: [16.0833, 78.8667], desc: "Andhra Pradesh", img: "images/jyotirlinga/mallikarjuna.jpg" },
+            { name: "Mahakaleshwar", coor: [23.1761, 75.7863], desc: "Madhya Pradesh", img: "images/jyotirlinga/mahakal.jpg" },
+            { name: "Omkareshwar", coor: [22.2458, 76.1517], desc: "Madhya Pradesh", img: "images/jyotirlinga/omkareshwar.jpg" },
+            { name: "Baidyanath", coor: [24.4833, 86.7000], desc: "Jharkhand", img: "images/jyotirlinga/vaidyanath.jpg" },
+            { name: "Kashi Vishwanath", coor: [25.3109, 83.0105], desc: "Uttar Pradesh", img: "images/char_dham/kashi.jpg" },
+            { name: "Kedarnath", coor: [30.7352, 79.0669], desc: "Uttarakhand", img: "images/char_dham/kedarnath.jpg" },
+            { name: "Trimbakeshwar", coor: [19.9323, 73.5308], desc: "Maharashtra", img: "images/jyotirlinga/trimbakeshwar.jpg" },
+            { name: "Bhimashankar", coor: [19.0721, 73.5358], desc: "Maharashtra", img: "images/jyotirlinga/bhimashankar.jpg" },
+            { name: "Grishneshwar", coor: [20.0264, 75.1689], desc: "Maharashtra", img: "images/jyotirlinga/grishneshwar.jpg" },
+            { name: "Rameshwaram", coor: [9.2881, 79.3174], desc: "Tamil Nadu", img: "images/jyotirlinga/rameswaram.jpg" }
+        ]
+    },
+    krishna: {
+        color: "#1E90FF",
+        budget: "₹25,000 - ₹35,000",
+        openMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        checklist: ["Yellow Clothing", "Mathura Pedas", "Comfortable Sandals"],
+        stops: [
+            { name: "Mathura", coor: [27.4924, 77.6737], desc: "Birthplace", img: "images/krishna/mathura.jpg" },
+            { name: "Vrindavan", coor: [27.5706, 77.6851], desc: "Childhood", img: "images/krishna/iskcon_vrindavan.jpg" },
+            { name: "Dwarka", coor: [22.2376, 68.9675], desc: "Kingdom", img: "images/krishna/dwarka.jpg" },
+            { name: "Jagannath Puri", coor: [19.8135, 85.8312], desc: "Sacred Dham", img: "images/krishna/puri.jpg" }
+        ]
+    }
+};
+
+    let activePath = null;
+    let markers = [];
+
+    function loadJourney(id) {
+        if (!id) return;
+        const data = routes[id];
+
+        // Clear Map
+        if (activePath) map.removeLayer(activePath);
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        // Draw Path
+        const coords = data.stops.map(s => s.coor);
+        activePath = L.polyline.antPath(coords, { color: data.color, weight: 6, pulseColor: "#FFFFFF" }).addTo(map);
+        map.fitBounds(activePath.getBounds(), { padding: [50, 50] });
+
+        // Add Markers
+        data.stops.forEach((stop, i) => {
+            const m = L.circleMarker(stop.coor, { radius: 8, fillColor: data.color, color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
+            m.bindPopup(`<b>${stop.name}</b><br>${stop.desc}`);
+            markers.push(m);
+        });
+
+        // Build Sidebar
+        let html = "";
+        data.stops.forEach((stop, i) => {
+            html += `
+                <div class="timeline-item" onclick="focusPoint(${i}, '${id}')">
+                    <img src="${stop.img}" alt="${stop.name}">
+                    <div>
+                        <strong>${stop.name}</strong><br>
+                        <small>${stop.desc}</small>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('itinerary-list').innerHTML = html;
+
+        // Seasonality & Budget
+        const mth = new Date().getMonth() + 1;
+        const isOpen = data.openMonths.includes(mth);
+        document.getElementById('season-info').innerHTML = `
+            <p><strong>Travel Status:</strong><br> 
+            <span class="status-badge ${isOpen ? 'open' : 'closed'}">${isOpen ? '🟢 SEASON OPEN' : '🔴 CLOSED NOW'}</span></p>
+        `;
+        document.getElementById('checklist-items').innerHTML = data.checklist.map(item => `<li><input type="checkbox"> ${item}</li>`).join('');
+        document.getElementById('budget-amount').innerText = data.budget;
+    }
+
+    function focusPoint(index, routeId) {
+    const stop = routes[routeId].stops[index];
+    map.flyTo(stop.coor, 12);
+    
+    // Fallback logic: if images/yourfile.jpg fails, show a placeholder
+    const popupContent = `
+        <div style="text-align:center; min-width:150px;">
+            <b style="color:#3a2e5a; display:block; margin-bottom:5px;">${stop.name}</b>
+            <img src="${stop.img}" 
+                 onerror="this.src='https://via.placeholder.com/150x100?text=Temple+Photo'" 
+                 style="width:140px; height:90px; border-radius:5px; object-fit:cover;">
+            <p style="font-size:0.8rem; margin:5px 0;">${stop.desc}</p>
+        </div>
+    `;
+    
+    L.popup()
+        .setLatLng(stop.coor)
+        .setContent(popupContent)
+        .openOn(map);
+}
+</script>
+</body>
+</html>

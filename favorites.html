@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Heritage Bucket List | TempleAtlas</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-logo">TempleAtlas</div>
+        <nav>
+            <a href="dashboard.html" class="nav-link"><span>📊</span> Dashboard</a>
+            <a href="map.html" class="nav-link"><span>🗺️</span> Map</a>
+            <a href="timeline.html" class="nav-link"><span>⏳</span> Timeline</a>
+            <a href="favs.html" class="nav-link active"><span>⭐</span> Favorites</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="dash-header">
+            <div>
+                <h1 id="greeting">Your Sacred Collection</h1>
+                <p id="favSummary" style="color: #888;">Loading your saved temples...</p>
+            </div>
+            <div class="header-actions">
+                <button class="action-card" onclick="exportFavorites()" style="padding: 10px 15px; font-weight: bold; font-size: 0.8rem;">📥 Export List</button>
+                <button class="action-card" onclick="clearAllFavorites()" style="padding: 10px 15px; font-weight: bold; font-size: 0.8rem; color: #FA3E3E;">🗑️ Clear All</button>
+            </div>
+        </header>
+
+        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 30px;">
+            <div class="stat-card" style="padding: 15px 25px;">
+                <small>DIVERSITY</small>
+                <p id="statStates" style="font-size: 1.8rem; margin: 5px 0;">0 States</p>
+            </div>
+            <div class="stat-card" style="padding: 15px 25px;">
+                <small>OLDEST SAVED</small>
+                <p id="statOldest" style="font-size: 1.8rem; margin: 5px 0;">--</p>
+            </div>
+            <div class="stat-card" style="padding: 15px 25px;">
+                <small>PRIMARY DEITY</small>
+                <p id="statDeity" style="font-size: 1.8rem; margin: 5px 0;">--</p>
+            </div>
+        </div>
+
+        <div id="filterContainer" style="display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 10px;">
+            </div>
+
+        <div id="favorites-grid" class="favorites-grid">
+            </div>
+    </main>
+</div>
+
+<script>
+let allTemples = [];
+let favoriteIds = JSON.parse(localStorage.getItem("favorites")) || [];
+
+// 1. Initial Data Fetch
+fetch('data/temples.json')
+.then(res => res.json())
+.then(data => {
+    allTemples = data;
+    initFavorites();
+});
+
+// 2. Initialize the View
+function initFavorites() {
+    // Refresh IDs in case they were changed in another tab
+    favoriteIds = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favoriteTemples = allTemples.filter(t => favoriteIds.includes(t.id));
+    
+    // Header Greeting
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+    document.getElementById('greeting').innerText = `Good ${greet}, Collector`;
+
+    updateStats(favoriteTemples);
+    renderFilters(favoriteTemples);
+    renderGrid(favoriteTemples); // Show all by default
+}
+
+// 3. Update the Small Stats Boxes
+function updateStats(favs) {
+    if (favs.length === 0) {
+        document.getElementById('statStates').innerText = "0 States";
+        document.getElementById('statOldest').innerText = "--";
+        document.getElementById('statDeity').innerText = "--";
+        document.getElementById('favSummary').innerText = "Your list is currently empty.";
+        return;
+    }
+
+    const states = [...new Set(favs.map(t => t.state))].length;
+    document.getElementById('statStates').innerText = `${states} States`;
+
+    const oldest = favs.reduce((prev, curr) => (parseInt(prev.year) < parseInt(curr.year)) ? prev : curr);
+    document.getElementById('statOldest').innerText = oldest.year;
+
+    const deities = favs.map(t => t.deity.split(' ').pop());
+    const topDeity = deities.sort((a,b) => deities.filter(v => v===a).length - deities.filter(v => v===b).length).pop();
+    document.getElementById('statDeity').innerText = topDeity || "--";
+
+    document.getElementById('favSummary').innerText = `You have ${favs.length} temples in your personal collection.`;
+}
+
+// 4. Render Filter Buttons
+function renderFilters(favs) {
+    const filterContainer = document.getElementById('filterContainer');
+    if(favs.length === 0) { filterContainer.innerHTML = ""; return; }
+
+    const uniqueDeities = [...new Set(favs.map(t => t.deity.split(' ').pop()))];
+    
+    let filterHtml = `<button class="action-card" onclick="filterFavs('all')" style="padding: 8px 20px; font-size: 0.8rem; min-width: 80px;">All</button>`;
+    uniqueDeities.forEach(d => {
+        filterHtml += `<button class="action-card" onclick="filterFavs('${d}')" style="padding: 8px 20px; font-size: 0.8rem; min-width: 80px;">${d}</button>`;
+    });
+    filterContainer.innerHTML = filterHtml;
+}
+
+// 5. Render Grid (Resetting every time to prevent ghost cards)
+function renderGrid(favs) {
+    const grid = document.getElementById('favorites-grid');
+    grid.innerHTML = ""; // CLEAN THE GRID FIRST
+
+    if (favs.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; background: white; border-radius: 24px;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">🏛️</div>
+                <h2 style="color: var(--purple);">No Temples Found</h2>
+                <p style="color: #888;">Try removing filters or explore the map to add more.</p>
+            </div>`;
+        return;
+    }
+
+    const html = favs.map(t => `
+        <div class="fav-card" id="card-${t.id}">
+            <div class="fav-deity-tag">${t.deity.split(' ').pop()}</div>
+            <img src="${t.image}" class="fav-image" alt="${t.name}" onerror="this.src='images/fallback.jpg'">
+            <div class="fav-info">
+                <h3>${t.name}</h3>
+                <p><span>📍</span> ${t.city}, ${t.state}</p>
+                <p style="font-size: 0.75rem; margin-top: 8px; opacity: 0.7;">🕍 ${t.deity}</p>
+            </div>
+            <div class="fav-actions">
+                <a href="temple.html?id=${t.id}" class="btn-view">View Detail</a>
+                <button onclick="removeSingle('${t.id}')" class="btn-remove">Remove</button>
+            </div>
+        </div>
+    `).join('');
+
+    grid.innerHTML = html;
+}
+
+// 6. Filter Functionality
+function filterFavs(deity) {
+    const favoriteTemples = allTemples.filter(t => favoriteIds.includes(t.id));
+    if (deity === 'all') {
+        renderGrid(favoriteTemples);
+    } else {
+        const filtered = favoriteTemples.filter(t => t.deity.includes(deity));
+        renderGrid(filtered);
+    }
+}
+
+// 7. Individual Removal
+function removeSingle(id) {
+    favoriteIds = favoriteIds.filter(fid => fid !== id);
+    localStorage.setItem("favorites", JSON.stringify(favoriteIds));
+    
+    const card = document.getElementById(`card-${id}`);
+    if(card) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        // Delay the grid refresh to allow the animation to finish
+        setTimeout(initFavorites, 300);
+    }
+}
+
+// 8. Bulk Clear
+function clearAllFavorites() {
+    if (confirm("Are you sure you want to clear your entire collection?")) {
+        localStorage.setItem("favorites", JSON.stringify([]));
+        favoriteIds = [];
+        initFavorites();
+    }
+}
+
+// 9. Export to TXT
+function exportFavorites() {
+    const favs = allTemples.filter(t => favoriteIds.includes(t.id));
+    if(favs.length === 0) { alert("Nothing to export!"); return; }
+
+    let content = "TEMPLE ATLAS: MY COLLECTION\n" + "=".repeat(30) + "\n";
+    favs.forEach((t, i) => {
+        content += `${i+1}. ${t.name} | ${t.city}, ${t.state} | ${t.deity}\n`;
+    });
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = "my_temple_list.txt";
+    link.click();
+}
+</script>
+
+</body>
+</html>

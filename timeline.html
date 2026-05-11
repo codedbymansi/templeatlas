@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempleAtlas | Historical Timeline</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root { --gold: #D4AF37; --purple: #3a2e5a; --bg: #f4f4f9; }
+        
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
+
+        .timeline-header { text-align: center; padding: 50px 20px; background: var(--purple); color: white; }
+        
+        /* The Main Timeline Container */
+        #timeline {
+            position: relative;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 40px 0;
+        }
+
+        /* The Central Gold Line */
+        #timeline::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            background: var(--gold);
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -2px;
+            z-index: 1;
+        }
+
+        /* Individual Timeline Item */
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 20px 60px;
+            box-sizing: border-box;
+            opacity: 0; /* For animation */
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+            clear: both;
+        }
+
+        .timeline-item.show { opacity: 1; transform: translateY(0); }
+
+        /* Left and Right Orientation */
+        .timeline-item:nth-child(odd) { left: 0; text-align: right; }
+        .timeline-item:nth-child(even) { left: 50%; text-align: left; }
+
+        /* The Content Card */
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+            border-top: 5px solid var(--purple);
+            transition: 0.3s;
+        }
+
+        .timeline-content:hover { transform: scale(1.02); }
+
+        /* Fix for Missing/Glitchy Images */
+        .timeline-content img {
+            width: 100%;
+            height: 220px; /* Fixed height stops layout jumps */
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: block;
+            background: #eee; /* Placeholder color */
+        }
+
+        /* The Dots on the Line */
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 4px solid var(--gold);
+            border-radius: 50%;
+            top: 30px;
+            z-index: 3;
+        }
+        .timeline-item:nth-child(odd)::after { right: -13px; }
+        .timeline-item:nth-child(even)::after { left: -13px; }
+
+        /* Filter Bar */
+        .filter-bar { text-align: center; margin: 30px 0; }
+        .filter-btn {
+            background: white; border: 2px solid var(--purple);
+            padding: 10px 20px; margin: 5px; border-radius: 25px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .filter-btn:hover, .filter-btn.active { background: var(--purple); color: white; }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #timeline::after { left: 30px; }
+            .timeline-item { width: 100%; padding-left: 70px; padding-right: 20px; text-align: left !important; }
+            .timeline-item:nth-child(even) { left: 0; }
+            .timeline-item::after { left: 17px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="timeline-header">
+    <h1>Sacred Architecture Timeline</h1>
+    <p>Journey through the centuries of Indian Temple evolution</p>
+</div>
+
+<div class="filter-bar">
+    <button class="filter-btn active" onclick="filterTemples('all', this)">All Temples</button>
+    <button class="filter-btn" onclick="filterTemples('North', this)">North India</button>
+    <button class="filter-btn" onclick="filterTemples('South', this)">South India</button>
+    <button class="filter-btn" onclick="filterTemples('Char Dham', this)">Char Dham</button>
+</div>
+
+<div id="timeline">
+    </div>
+
+<script>
+    let allTemples = [];
+
+    // 1. Fetch the data from your JSON
+    fetch('data/temples.json')
+        .then(res => res.json())
+        .then(data => {
+            allTemples = data;
+            displayTemples(allTemples);
+        })
+        .catch(err => console.error("Could not load JSON:", err));
+
+    // 2. The Main Display Function
+    function displayTemples(temples) {
+        // Sort by year (Parsing "8th Century" style strings)
+        temples.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+
+        let html = "";
+        temples.forEach(t => {
+            html += `
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div style="background:var(--gold); color:white; display:inline-block; padding:2px 10px; border-radius:4px; font-weight:bold; margin-bottom:10px;">
+                        ${t.year}
+                    </div>
+                    <h3 style="margin:5px 0;">
+                        <a href="temple.html?id=${t.id}" style="text-decoration:none; color:var(--purple);">${t.name}</a>
+                    </h3>
+                    <p style="font-size:0.8rem; color:#888; margin:0;">${t.city}, ${t.state}</p>
+                    
+                    <img src="${t.image}" alt="${t.name}" onerror="this.src='images/fallback.jpg'">
+                    
+                    <p style="color:#555; font-size:0.9rem;">${t.description}</p>
+                    <a href="temple.html?id=${t.id}" style="color:var(--gold); font-weight:bold; text-decoration:none; font-size:0.8rem;">LEARN MORE →</a>
+                </div>
+            </div>`;
+        });
+
+        const container = document.getElementById("timeline");
+        container.innerHTML = html;
+
+        // Trigger animations
+        setTimeout(() => {
+            const items = document.querySelectorAll('.timeline-item');
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if(entry.isIntersecting) entry.target.classList.add('show');
+                });
+            }, { threshold: 0.1 });
+            
+            items.forEach(item => observer.observe(item));
+        }, 100);
+    }
+
+    // 3. The Filter Function
+    function filterTemples(category, btn) {
+        // UI: Toggle active button
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (category === 'all') {
+            displayTemples(allTemples);
+        } else {
+            const filtered = allTemples.filter(t => 
+                (t.region && t.region.toLowerCase() === category.toLowerCase()) || 
+                (t.category && t.category.toLowerCase() === category.toLowerCase())
+            );
+            displayTemples(filtered);
+        }
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
